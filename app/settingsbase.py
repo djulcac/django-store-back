@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/5.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
-
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -37,11 +37,21 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
+    # third software
+    'rest_framework',
+    'knox',
+    'corsheaders',
+    'django_accounts.accounts_sun',
+
+    # own software
+    'homepage',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -54,7 +64,7 @@ ROOT_URLCONF = 'app.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')], ## custom
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -121,3 +131,29 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+## ADD TO STATICS
+### to collect the statics of the apps
+STATICFILES_DIRS = [
+   os.path.join(BASE_DIR, 'static')
+]
+### the destinations of de files 
+STATIC_ROOT = os.path.join(BASE_DIR, 'static_build')
+
+
+## CUSTOM USERS
+AUTH_USER_MODEL = "accounts_sun.User"
+
+
+## REST_FRAMEWORK - KNOX
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': ('knox.auth.TokenAuthentication',),
+}
+
+
+## DJANGO_CORS_HEADERS
+CORS_ALLOWED_ORIGINS  = [
+    'http://localhost:5173'
+]
+
+CORS_ALLOW_CREDENTIALS = True
