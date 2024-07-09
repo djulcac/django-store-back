@@ -1,0 +1,89 @@
+name: "Deploy-with-terraform-base"
+on:
+  push:
+    branches:
+      - prod
+      - beta
+      # - feat/2-actions
+# env:
+#   ROOT_PATH: '${{github.workspace}}/terraform/deploy' 
+jobs:
+  deploy-dev:
+    name:   Deploy Dev
+    runs-on: ubuntu-latest
+    env:
+      TYPE_ENV: dev
+      GCP_CREDENTIAL_ENV: ${{ secrets.GCP_CREDENTIAL_DEV}}
+      GCP_PROJECT_ID_ENV: ${{vars.GCP_PROJECT_ID_DEV}}
+      GCP_CLIENT_EMAIL_ENV: ${{vars.GCP_CLIENT_EMAIL_DEV}}
+      GCP_BUCKET_ENV: ${{vars.GCP_REPOSITORY}}-${{vars.GCP_RUN_NAME}}-tracking-dev-${{vars.UUID_VALUE}}
+      GCP_STORAGE_PUBLIC_ENV: ${{vars.GCP_REPOSITORY}}-${{vars.GCP_RUN_NAME}}-public-dev-${{vars.UUID_VALUE}}
+      VAR_CICD_STATIC_ENV: static-dev
+    if: github.ref == 'refs/heads/beta'
+    # if: github.ref == 'refs/heads/feat/2-actions'
+    steps:
+      - uses: actions/checkout@v2
+      - uses: hashicorp/setup-terraform@v2
+
+      - name: Generar credenciales ${{vars.LOCAL_FILE}}
+        run: |
+          echo "Inicio"
+          echo "$GCP_CREDENTIAL" >> ${{vars.LOCAL_FILE}}
+        env:
+          GCP_CREDENTIAL: ${{env.GCP_CREDENTIAL_ENV}}
+
+      - name: Auth login
+        run: |
+          ls
+          gcloud auth activate-service-account ${{env.GCP_CLIENT_EMAIL_ENV}} --key-file=${{vars.LOCAL_FILE}} --project=${{env.GCP_PROJECT_ID_ENV}}
+          echo "get-value:"
+          gcloud config get-value project
+
+      - name: GCP build
+        run: |
+          gsutil -m cp -R ./static_build/* gs://${{env.GCP_STORAGE_PUBLIC_ENV}}/${{env.VAR_CICD_STATIC_ENV}}/
+          gcloud builds submit --gcs-log-dir=gs://${{env.GCP_BUCKET_ENV}} --tag us-central1-docker.pkg.dev/${{env.GCP_PROJECT_ID_ENV}}/${{vars.GCP_REPOSITORY}}repository/p${{vars.GCP_RUN_NAME}}:${{env.TYPE_ENV}}
+
+      - name: GCP Deploy
+        run: |
+          gcloud run deploy ${{vars.GCP_REPOSITORY}}-${{vars.GCP_RUN_NAME}}-${{env.TYPE_ENV}} --image us-central1-docker.pkg.dev/${{env.GCP_PROJECT_ID_ENV}}/${{vars.GCP_REPOSITORY}}repository/p${{vars.GCP_RUN_NAME}}:${{env.TYPE_ENV}} --region us-central1 --allow-unauthenticated
+
+  deploy-prod:
+    name:   Deploy Prod
+    runs-on: ubuntu-latest
+    env:
+      TYPE_ENV: prod
+      GCP_CREDENTIAL_ENV: ${{ secrets.GCP_CREDENTIAL_PROD}}
+      GCP_PROJECT_ID_ENV: ${{vars.GCP_PROJECT_ID_PROD}}
+      GCP_CLIENT_EMAIL_ENV: ${{vars.GCP_CLIENT_EMAIL_PROD}}
+      GCP_BUCKET_ENV: ${{vars.GCP_REPOSITORY}}-${{vars.GCP_RUN_NAME}}-tracking-prod-${{vars.UUID_VALUE}}
+      GCP_STORAGE_PUBLIC_ENV: ${{vars.GCP_REPOSITORY}}-${{vars.GCP_RUN_NAME}}-public-prod-${{vars.UUID_VALUE}}
+      VAR_CICD_STATIC_ENV: static-prod
+    if: github.ref == 'refs/heads/prod'
+    steps:
+      - uses: actions/checkout@v2
+      - uses: hashicorp/setup-terraform@v2
+
+      - name: Generar credenciales ${{vars.LOCAL_FILE}}
+        run: |
+          echo "Inicio"
+          echo "$GCP_CREDENTIAL" >> ${{vars.LOCAL_FILE}}
+        env:
+          GCP_CREDENTIAL: ${{env.GCP_CREDENTIAL_ENV}}
+
+      - name: Auth login
+        run: |
+          ls
+          gcloud auth activate-service-account ${{env.GCP_CLIENT_EMAIL_ENV}} --key-file=${{vars.LOCAL_FILE}} --project=${{env.GCP_PROJECT_ID_ENV}}
+          echo "get-value:"
+          gcloud config get-value project
+
+      - name: GCP build
+        run: |
+          gsutil -m cp -R ./static_build/* gs://${{env.GCP_STORAGE_PUBLIC_ENV}}/${{env.VAR_CICD_STATIC_ENV}}/
+          gcloud builds submit --gcs-log-dir=gs://${{env.GCP_BUCKET_ENV}} --tag us-central1-docker.pkg.dev/${{env.GCP_PROJECT_ID_ENV}}/${{vars.GCP_REPOSITORY}}repository/p${{vars.GCP_RUN_NAME}}:${{env.TYPE_ENV}}
+
+      - name: GCP Deploy
+        run: |
+          gcloud run deploy ${{vars.GCP_REPOSITORY}}-${{vars.GCP_RUN_NAME}}-${{env.TYPE_ENV}} --image us-central1-docker.pkg.dev/${{env.GCP_PROJECT_ID_ENV}}/${{vars.GCP_REPOSITORY}}repository/p${{vars.GCP_RUN_NAME}}:${{env.TYPE_ENV}} --region us-central1 --allow-unauthenticated
+          gcloud run deploy ${{vars.GCP_REPOSITORY}}-${{vars.GCP_RUN_NAME}}-${{env.TYPE_ENV}}-proxy --image us-central1-docker.pkg.dev/${{env.GCP_PROJECT_ID_ENV}}/${{vars.GCP_REPOSITORY}}repository/p${{vars.GCP_RUN_NAME}}:${{env.TYPE_ENV}} --region us-central1 --allow-unauthenticated
