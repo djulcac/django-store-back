@@ -47,7 +47,7 @@ def getConfig():
     
     # Variables de entorno(3)
     try:
-        data = os.environ.get("P142_JSON", "{}")
+        data = os.environ.get("P149_JSON", "{}")
         data = json.loads(data)
         updateJson(data,config,"env")
     except Exception as errors:
