@@ -16,10 +16,23 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.http import JsonResponse
+
+def get_version(request):
+    return JsonResponse({
+        'status': 'ok',
+        'version': 'v0.1.0',
+    })
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-
+    path(
+        'api/v1/accounts/',
+        include(
+            ('django_accounts.accounts_sun.api.urls', 'accounts_sun_api'),
+            namespace='accounts_sun_api'
+        )
+    ),
     path(
         '',
         include(
@@ -27,4 +40,12 @@ urlpatterns = [
             namespace='homepage'
         )
     ),
+    path(
+        'api/v1/store/',
+        include(
+            ('store.api.urls', 'store_api'),
+            namespace='store_api'
+        )
+    ),
+    path('api/v1/healthcheck/', get_version, name='version'),
 ]
