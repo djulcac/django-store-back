@@ -46,6 +46,7 @@ INSTALLED_APPS = [
 
     # own software
     'homepage',
+    'store',
 ]
 
 MIDDLEWARE = [
